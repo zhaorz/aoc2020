@@ -16,8 +16,10 @@
 #include <iostream>
 #include <vector>
 #include <unordered_map>
+#include <optional>
 
-int day1(std::vector<int> const& nums) {
+std::optional<std::pair<int, int>> day1(std::vector<int> const& nums, int goal = 2020)
+{
     // For each a in nums, calculate b such that a + b = 2020. Store b => a in
     // the map. If b ever appears in nums again, we can immediately return the
     // product, a * b
@@ -26,13 +28,37 @@ int day1(std::vector<int> const& nums) {
         if (auto it = targets.find(n);
                 it != targets.end())
         {
-            return n * it->second;
+            return std::make_pair(n, it->second);
         }
         // Don't care if we overwrite
-        int target = 2020 - n;
+        int target = goal - n;
         targets[target] = n;
     }
-    throw std::runtime_error("No solution");
+    return std::nullopt;
+}
+
+// The Elves in accounting are thankful for your help; one of them even offers you
+// a starfish coin they had left over from a past vacation. They offer you a
+// second one if you can find three numbers in your expense report that meet the
+// same criteria.
+//
+// Using the above example again, the three entries that sum to 2020 are 979, 366,
+//       and 675. Multiplying them together produces the answer, 241861950.
+//
+// In your expense report, what is the product of the three entries that sum to
+// 2020?
+
+std::optional<std::tuple<int,int,int>> part2(std::vector<int> const& nums, int goal = 2020)
+{
+    for (int a : nums) {
+        int derivedGoal = goal - a;
+        auto res = day1(nums, derivedGoal);
+        if (res) {
+            // This means there existed b, c in nums such that b + c = 2020 - a
+            return std::make_tuple(a, res->first, res->second);
+        }
+    }
+    return std::nullopt;
 }
 
 int main(int argc, char** argv) {
@@ -51,7 +77,26 @@ int main(int argc, char** argv) {
         throw std::runtime_error("Invalid file : " + ifname);
     }
 
-    std::cout << day1(nums) << std::endl;
+    auto day1Res = day1(nums);
+    if (day1Res) {
+        int a = day1Res->first;
+        int b = day1Res->second;
+        std::cout << "Day 1 part 1: "
+            << a << " * " << b << " = " << a * b
+            << std::endl;
+    }
+    auto part2Res = part2(nums);
+    if (part2Res) {
+        int a = std::get<0>(*part2Res);
+        int b = std::get<1>(*part2Res);
+        int c = std::get<2>(*part2Res);
+        std::cout << "Day 1 part 2: "
+            << a << " * " << b << " * " << c << " = " << a * b * c
+            << std::endl;
+    } else {
+        throw std::runtime_error("No solution");
+    }
+
 
     return 0;
 }
