@@ -1,0 +1,72 @@
+#! /usr/bin/env python
+
+import argparse
+import os
+import subprocess
+import sys
+
+def make_cmake_args(args):
+    cmake_args = []
+
+    if args.generator == 'ninja':
+        cmake_args.append('-G')
+        cmake_args.append('Ninja')
+
+    cmake_args += [
+            '-DCMAKE_BUILD_TYPE={}'
+                .format('Debug' if args.build_type == 'debug' else 'Release'),
+            '-DCMAKE_CXX_STANDARD={}'
+                .format(args.standard)
+    ]
+
+    return cmake_args
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser('CMake setup utility')
+
+    parser.add_argument('build-dir',
+            nargs='?',
+            default=os.getcwd(),
+            help='Path to build directory')
+
+    parser.add_argument('-b', '--build-type',
+            choices=['debug', 'release'],
+            default='debug',
+            help='CMake build type')
+
+    parser.add_argument('-g', '--generator',
+            choices=['ninja', 'make'],
+            default='make',
+            help='Specify a CMake generator')
+
+    parser.add_argument('-s', '--standard',
+            choices=[11, 14, 17],
+            default=11,
+            type=int,
+            help='C++ standard')
+
+    parser.add_argument('-l', '--link-compile-commands',
+            action='store_true',
+            help='Symlink compile_commands.json')
+
+    args = parser.parse_args()
+
+    base_path = os.path.dirname(__file__)
+    cmake_args = make_cmake_args(args)
+
+    try:
+        print 'Calling cmake with: {}'.format(' '.join(cmake_args))
+        subprocess.call(['cmake', '..'] + cmake_args)
+    except subprocess.CalledProcessError as e:
+        print 'CMake failed : {}'.format(e)
+        sys.exit(1)
+
+    # TODO
+    # if args.link_compile_commands:
+    #     try:
+    #         print subprocess.check_output(
+    #             ['ln', '-s',
+    #                 'compile_commands.json',
+    #                 '{}/compile_commands.json'.format(base_path)])
+    #     except subprocess.CalledProcessError as e:
+    #         print 'Failed to link compile_commands.json'
